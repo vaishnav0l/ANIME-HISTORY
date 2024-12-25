@@ -1,308 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Tracker</title>
-    <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
-            text-align: center;
-        }
-        button {
-            background-color: #333;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #555;
-        }
-        input {
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #444;
-            border-radius: 5px;
-            background-color: #222;
-            color: #fff;
-            width: 80%;
-        }
-        input::placeholder {
-            color: #888;
-        }
-        .hidden {
-            display: none;
-        }
-        .container {
-            margin-top: 50px;
-        }
-        .tracker-buttons {
-            margin-top: 20px;
-        }
-        table {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            color: #fff;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #444;
-            background-color: #222;
-        }
-        th {
-            background-color: #333;
-        }
-        hr {
-            border: 0.5px solid #444;
-        }
-        a {
-            color: #00bcd4;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .logout-button {
-            margin-top: 50px;
-        }
-    </style>
-</head>
-<body>
-    <!-- Home Page -->
-    <div id="home-page" class="container">
-        <h1>Welcome to Anime World</h1>
-        <p>Entering the world where you can track and discover amazing anime!</p>
-        <button onclick="showLogin()">LOGIN</button>
-        <button onclick="showSignup()">SIGN UP</button>
-    </div>
+import streamlit as st
+import json
 
-    <!-- Login Page -->
-    <div id="login-page" class="hidden container">
-        <h2>Login</h2>
-        <input type="email" id="login-email" placeholder="Email">
-        <input type="password" id="login-password" placeholder="Password">
-        <button onclick="login()">LOGIN</button>
-        <button onclick="goBackToHomeFromLogin()">BACK</button>
-        <p><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
-    </div>
+# Load user data from local storage (if exists)
+users = {}
+try:
+    with open('users.json', 'r') as f:
+        users = json.load(f)
+except FileNotFoundError:
+    pass
 
-    <!-- Signup Page -->
-    <div id="signup-page" class="hidden container">
-        <h2>Sign Up</h2>
-        <input type="email" id="signup-email" placeholder="Email">
-        <input type="password" id="signup-password" placeholder="Password">
-        <button onclick="signup()">SIGN UP</button>
-        <button onclick="goBackToHomeFromSignup()">BACK</button>
-    </div>
+# User session management
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
 
-    <!-- Forgot Password Page -->
-    <div id="forgot-password-page" class="hidden container">
-        <h2>Forgot Password</h2>
-        <input type="email" id="forgot-email" placeholder="Enter your email">
-        <button onclick="sendResetCode()">SEND CODE</button>
-    </div>
+# Function to save users data
+def save_users():
+    with open('users.json', 'w') as f:
+        json.dump(users, f)
 
-    <!-- Enter Code Page -->
-    <div id="enter-code-page" class="hidden container">
-        <h2>Enter Reset Code</h2>
-        <input type="text" id="reset-code" placeholder="Enter code">
-        <button onclick="verifyCode()">VERIFY</button>
-    </div>
+# Login function
+def login(email, password):
+    if email in users and users[email]['password'] == password:
+        st.session_state.current_user = email
+        st.success("Login successful!")
+    else:
+        st.error("Invalid email or password!")
 
-    <!-- Reset Password Page -->
-    <div id="reset-password-page" class="hidden container">
-        <h2>Reset Password</h2>
-        <input type="password" id="new-password" placeholder="Enter new password">
-        <button onclick="resetPassword()">RESET PASSWORD</button>
-    </div>
+# Signup function
+def signup(email, password):
+    if email in users:
+        st.error("Email already exists!")
+    else:
+        users[email] = {'password': password, 'anime_data': {'completed': [], 'continuing': [], 'watchlist': [], 'upcoming': []}}
+        save_users()
+        st.session_state.current_user = email
+        st.success("Signup successful! You can now log in.")
 
-    <!-- Tracker Page -->
-    <div id="tracker-page" class="hidden container">
-        <h1>My Anime Tracker</h1>
-        <p>Keep track of all the anime you've watched!</p>
-        <hr>
-        <div class="tracker-buttons">
-            <button onclick="showSection('completed')">Completed</button>
-            <button onclick="showSection('continuing')">Continuing</button>
-            <button onclick="showSection('watchlist')">Watchlist</button>
-            <button onclick="showSection('upcoming')">Upcoming</button>
-        </div>
-        <button class="logout-button" onclick="logout()">LOGOUT</button>
-    </div>
+# Logout function
+def logout():
+    st.session_state.current_user = None
+    st.success("Logged out successfully!")
 
-    <!-- Section Pages -->
-    <div id="section-page" class="hidden container">
-        <h2 id="section-title"></h2>
-        <button onclick="backToTracker()">Back to Tracker</button>
-        <div id="section-form"></div>
-        <table id="section-table">
-            <thead>
-                <tr id="table-headers"></tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
+# Reset password function
+def reset_password(email, new_password):
+    if email in users:
+        users[email]['password'] = new_password
+        save_users()
+        st.success("Password reset successful! You can now log in.")
+    else:
+        st.error("Email not found!")
 
-    <script>
-        const users = JSON.parse(localStorage.getItem('users')) || {};
-        let currentUser = null;
-        let resetEmail = '';
-        let animeData = {};
+# Main function for anime tracking
+def show_anime_tracker():
+    st.title("My Anime Tracker")
+    st.write("Track your anime collection!")
+    
+    section = st.radio("Select Section", ["Completed", "Continuing", "Watchlist", "Upcoming"])
 
-        function showLogin() {
-            document.getElementById('home-page').style.display = 'none';
-            document.getElementById('login-page').style.display = 'block';
-        }
+    anime_name = st.text_input("Anime Name")
+    season_count = st.text_input("Season Count")
+    rating = st.text_input("Rating")
+    category = st.text_input("Category")
+    
+    if st.button(f"Add to {section}"):
+        anime = [anime_name, season_count, rating, category]
+        section_data = users[st.session_state.current_user]['anime_data'][section.lower()]
+        section_data.append(anime)
+        save_users()
+        st.success(f"Added {anime_name} to {section} section!")
+    
+    # Display anime list for the selected section
+    st.write(f"Anime in {section} section:")
+    section_data = users[st.session_state.current_user]['anime_data'][section.lower()]
+    if section_data:
+        for anime in section_data:
+            st.write(f"- {anime[0]} | Seasons: {anime[1]} | Rating: {anime[2]} | Category: {anime[3]}")
+    else:
+        st.write(f"No anime found in {section} section.")
 
-        function showSignup() {
-            document.getElementById('home-page').style.display = 'none';
-            document.getElementById('signup-page').style.display = 'block';
-        }
+# Streamlit App Flow
+def main():
+    st.sidebar.title("Anime Tracker App")
+    menu = ["Home", "Login", "Signup", "Tracker", "Logout"]
+    choice = st.sidebar.selectbox("Select Option", menu)
+    
+    # Home Page
+    if choice == "Home":
+        st.title("Welcome to Anime World")
+        st.write("Enter the world where you can track and discover amazing anime!")
+        st.button("Go to Login", on_click=lambda: st.session_state.update({'current_user': None}))
 
-        function login() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+    # Login Page
+    elif choice == "Login":
+        if st.session_state.current_user is None:
+            st.title("Login")
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            
+            if st.button("Login"):
+                login(email, password)
+        else:
+            st.write(f"Welcome back, {st.session_state.current_user}!")
+            st.button("Go to Tracker", on_click=show_anime_tracker)
 
-            if (users[email] && users[email].password === password) {
-                alert('Login successful!');
-                currentUser = email;
-                animeData = users[email].animeData || { completed: [], continuing: [], watchlist: [], upcoming: [] };
-                document.getElementById('login-page').style.display = 'none';
-                document.getElementById('tracker-page').style.display = 'block';
-            } else {
-                alert('Invalid email or password!');
-            }
-        }
+    # Signup Page
+    elif choice == "Signup":
+        if st.session_state.current_user is None:
+            st.title("Signup")
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            
+            if st.button("Sign Up"):
+                signup(email, password)
+        else:
+            st.write(f"Welcome back, {st.session_state.current_user}!")
+            st.button("Go to Tracker", on_click=show_anime_tracker)
 
-        function signup() {
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
+    # Anime Tracker Page
+    elif choice == "Tracker":
+        if st.session_state.current_user is not None:
+            show_anime_tracker()
+        else:
+            st.warning("You need to log in first!")
+    
+    # Logout Page
+    elif choice == "Logout":
+        if st.session_state.current_user is not None:
+            logout()
+        else:
+            st.warning("You are not logged in!")
 
-            if (users[email]) {
-                alert('Email already exists!');
-            } else {
-                users[email] = { password, animeData: { completed: [], continuing: [], watchlist: [], upcoming: [] } };
-                localStorage.setItem('users', JSON.stringify(users));
-                alert('Signup successful! You can now log in.');
-                showLogin();
-            }
-        }
-
-        function logout() {
-            alert('Logged out successfully!');
-            currentUser = null;
-            animeData = {};
-            document.getElementById('tracker-page').style.display = 'none';
-            document.getElementById('home-page').style.display = 'block';
-        }
-
-        function sendResetCode() {
-            const email = document.getElementById('forgot-email').value;
-
-            if (users[email]) {
-                resetEmail = email;
-                const code = Math.floor(100000 + Math.random() * 900000);
-                users[email].resetCode = code;
-                localStorage.setItem('users', JSON.stringify(users));
-                alert(`Reset code sent to ${email}`);
-                document.getElementById('forgot-password-page').style.display = 'none';
-                document.getElementById('enter-code-page').style.display = 'block';
-            } else {
-                alert('Email not found!');
-            }
-        }
-
-        function verifyCode() {
-            const code = document.getElementById('reset-code').value;
-
-            if (users[resetEmail] && users[resetEmail].resetCode == code) {
-                alert('Code verified! Enter your new password.');
-                document.getElementById('enter-code-page').style.display = 'none';
-                document.getElementById('reset-password-page').style.display = 'block';
-            } else {
-                alert('Invalid code!');
-            }
-        }
-
-        function resetPassword() {
-            const newPassword = document.getElementById('new-password').value;
-
-            if (resetEmail) {
-                users[resetEmail].password = newPassword;
-                delete users[resetEmail].resetCode;
-                localStorage.setItem('users', JSON.stringify(users));
-                alert('Password reset successful! You can now log in.');
-                resetEmail = '';
-                showLogin();
-            }
-        }
-
-        function showSection(section) {
-            const sectionMap = {
-                completed: ['Anime Name', 'Season Count', 'Rating', 'Category'],
-                continuing: ['Anime Name', 'Day', 'Season No', 'Category'],
-                watchlist: ['Anime Name', 'No of Seasons', 'Category'],
-                upcoming: ['Anime Name', 'Season Count', 'Release Date', 'Category']
-            };
-
-            const formFields = sectionMap[section];
-            document.getElementById('tracker-page').style.display = 'none';
-            document.getElementById('section-page').style.display = 'block';
-
-            document.getElementById('section-title').textContent = section.charAt(0).toUpperCase() + section.slice(1);
-            const formHtml = formFields.map(field => `<input type="text" id="${field.toLowerCase().replace(/\s+/g, '-')}-${section}" placeholder="${field}">`).join('');
-            document.getElementById('section-form').innerHTML = formHtml + `<button onclick="addAnime('${section}')">Add</button>`;
-
-            const headersHtml = formFields.map(field => `<th>${field}</th>`).join('');
-            document.getElementById('table-headers').innerHTML = headersHtml;
-            updateTable(section);
-        }
-
-        function addAnime(section) {
-            const inputs = Array.from(document.querySelectorAll(`#section-form input`));
-            const anime = inputs.map(input => input.value.trim());
-
-            if (anime.some(value => value === '')) {
-                alert('Please fill out all fields!');
-                return;
-            }
-
-            animeData[section].push(anime);
-            users[currentUser].animeData = animeData;
-            localStorage.setItem('users', JSON.stringify(users));
-
-            updateTable(section);
-            inputs.forEach(input => (input.value = ''));
-        }
-
-        function updateTable(section) {
-            const rowsHtml = animeData[section]
-                .map(anime => `<tr>${anime.map(value => `<td>${value}</td>`).join('')}</tr>`)
-                .join('');
-            document.getElementById('table-body').innerHTML = rowsHtml;
-        }
-
-        function backToTracker() {
-            document.getElementById('section-page').style.display = 'none';
-            document.getElementById('tracker-page').style.display = 'block';
-        }
-
-        function goBackToHomeFromLogin() {
-            document.getElementById('login-page').style.display = 'none';
-            document.getElementById('home-page').style.display = 'block';
-        }
-
-        function goBackToHomeFromSignup() {
-            document.getElementById('signup-page').style.display = 'none';
-            document.getElementById('home-page').style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+if __name__ == "__main__":
+    main()
