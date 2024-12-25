@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Tracker</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+        }
+        button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #222;
+            color: #fff;
+            width: 80%;
+        }
+        input::placeholder {
+            color: #888;
+        }
+        .hidden {
+            display: none;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .tracker-buttons {
+            margin-top: 20px;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            color: #fff;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #444;
+            background-color: #222;
+        }
+        th {
+            background-color: #333;
+        }
+        hr {
+            border: 0.5px solid #444;
+        }
+        a {
+            color: #00bcd4;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .logout-button {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Home Page -->
+    <div id="home-page" class="container">
+        <h1>Welcome to Anime World</h1>
+        <p>Entering the world where you can track and discover amazing anime!</p>
+        <button onclick="showLogin()">LOGIN</button>
+        <button onclick="showSignup()">SIGN UP</button>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="hidden container">
+        <h2>Login</h2>
+        <input type="email" id="login-email" placeholder="Email">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="login()">LOGIN</button>
+        <button onclick="goBackToHomeFromLogin()">BACK</button>
+        <p><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
+    </div>
+
+    <!-- Signup Page -->
+    <div id="signup-page" class="hidden container">
+        <h2>Sign Up</h2>
+        <input type="email" id="signup-email" placeholder="Email">
+        <input type="password" id="signup-password" placeholder="Password">
+        <button onclick="signup()">SIGN UP</button>
+        <button onclick="goBackToHomeFromSignup()">BACK</button>
+    </div>
+
+    <!-- Forgot Password Page -->
+    <div id="forgot-password-page" class="hidden container">
+        <h2>Forgot Password</h2>
+        <input type="email" id="forgot-email" placeholder="Enter your email">
+        <button onclick="sendResetCode()">SEND CODE</button>
+    </div>
+
+    <!-- Enter Code Page -->
+    <div id="enter-code-page" class="hidden container">
+        <h2>Enter Reset Code</h2>
+        <input type="text" id="reset-code" placeholder="Enter code">
+        <button onclick="verifyCode()">VERIFY</button>
+    </div>
+
+    <!-- Reset Password Page -->
+    <div id="reset-password-page" class="hidden container">
+        <h2>Reset Password</h2>
+        <input type="password" id="new-password" placeholder="Enter new password">
+        <button onclick="resetPassword()">RESET PASSWORD</button>
+    </div>
+
+    <!-- Tracker Page -->
+    <div id="tracker-page" class="hidden container">
+        <h1>My Anime Tracker</h1>
+        <p>Keep track of all the anime you've watched!</p>
+        <hr>
+        <div class="tracker-buttons">
+            <button onclick="showSection('completed')">Completed</button>
+            <button onclick="showSection('continuing')">Continuing</button>
+            <button onclick="showSection('watchlist')">Watchlist</button>
+            <button onclick="showSection('upcoming')">Upcoming</button>
+        </div>
+        <button class="logout-button" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <!-- Section Pages -->
+    <div id="section-page" class="hidden container">
+        <h2 id="section-title"></h2>
+        <button onclick="backToTracker()">Back to Tracker</button>
+        <div id="section-form"></div>
+        <table id="section-table">
+            <thead>
+                <tr id="table-headers"></tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        let currentUser = null;
+        let resetEmail = '';
+        let animeData = {};
+
+        function showLogin() {
+            document.getElementById('home-page').style.display = 'none';
+            document.getElementById('login-page').style.display = 'block';
+        }
+
+        function showSignup() {
+            document.getElementById('home-page').style.display = 'none';
+            document.getElementById('signup-page').style.display = 'block';
+        }
+
+        function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (users[email] && users[email].password === password) {
+                alert('Login successful!');
+                currentUser = email;
+                animeData = users[email].animeData || { completed: [], continuing: [], watchlist: [], upcoming: [] };
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('tracker-page').style.display = 'block';
+            } else {
+                alert('Invalid email or password!');
+            }
+        }
+
+        function signup() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+
+            if (users[email]) {
+                alert('Email already exists!');
+            } else {
+                users[email] = { password, animeData: { completed: [], continuing: [], watchlist: [], upcoming: [] } };
+                localStorage.setItem('users', JSON.stringify(users));
+                alert('Signup successful! You can now log in.');
+                showLogin();
+            }
+        }
+
+        function logout() {
+            alert('Logged out successfully!');
+            currentUser = null;
+            animeData = {};
+            document.getElementById('tracker-page').style.display = 'none';
+            document.getElementById('home-page').style.display = 'block';
+        }
+
+        function sendResetCode() {
+            const email = document.getElementById('forgot-email').value;
+
+            if (users[email]) {
+                resetEmail = email;
+                const code = Math.floor(100000 + Math.random() * 900000);
+                users[email].resetCode = code;
+                localStorage.setItem('users', JSON.stringify(users));
+                alert(`Reset code sent to ${email}`);
+                document.getElementById('forgot-password-page').style.display = 'none';
+                document.getElementById('enter-code-page').style.display = 'block';
+            } else {
+                alert('Email not found!');
+            }
+        }
+
+        function verifyCode() {
+            const code = document.getElementById('reset-code').value;
+
+            if (users[resetEmail] && users[resetEmail].resetCode == code) {
+                alert('Code verified! Enter your new password.');
+                document.getElementById('enter-code-page').style.display = 'none';
+                document.getElementById('reset-password-page').style.display = 'block';
+            } else {
+                alert('Invalid code!');
+            }
+        }
+
+        function resetPassword() {
+            const newPassword = document.getElementById('new-password').value;
+
+            if (resetEmail) {
+                users[resetEmail].password = newPassword;
+                delete users[resetEmail].resetCode;
+                localStorage.setItem('users', JSON.stringify(users));
+                alert('Password reset successful! You can now log in.');
+                resetEmail = '';
+                showLogin();
+            }
+        }
+
+        function showSection(section) {
+            const sectionMap = {
+                completed: ['Anime Name', 'Season Count', 'Rating', 'Category'],
+                continuing: ['Anime Name', 'Day', 'Season No', 'Category'],
+                watchlist: ['Anime Name', 'No of Seasons', 'Category'],
+                upcoming: ['Anime Name', 'Season Count', 'Release Date', 'Category']
+            };
+
+            const formFields = sectionMap[section];
+            document.getElementById('tracker-page').style.display = 'none';
+            document.getElementById('section-page').style.display = 'block';
+
+            document.getElementById('section-title').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+            const formHtml = formFields.map(field => `<input type="text" id="${field.toLowerCase().replace(/\s+/g, '-')}-${section}" placeholder="${field}">`).join('');
+            document.getElementById('section-form').innerHTML = formHtml + `<button onclick="addAnime('${section}')">Add</button>`;
+
+            const headersHtml = formFields.map(field => `<th>${field}</th>`).join('');
+            document.getElementById('table-headers').innerHTML = headersHtml;
+            updateTable(section);
+        }
+
+        function addAnime(section) {
+            const inputs = Array.from(document.querySelectorAll(`#section-form input`));
+            const anime = inputs.map(input => input.value.trim());
+
+            if (anime.some(value => value === '')) {
+                alert('Please fill out all fields!');
+                return;
+            }
+
+            animeData[section].push(anime);
+            users[currentUser].animeData = animeData;
+            localStorage.setItem('users', JSON.stringify(users));
+
+            updateTable(section);
+            inputs.forEach(input => (input.value = ''));
+        }
+
+        function updateTable(section) {
+            const rowsHtml = animeData[section]
+                .map(anime => `<tr>${anime.map(value => `<td>${value}</td>`).join('')}</tr>`)
+                .join('');
+            document.getElementById('table-body').innerHTML = rowsHtml;
+        }
+
+        function backToTracker() {
+            document.getElementById('section-page').style.display = 'none';
+            document.getElementById('tracker-page').style.display = 'block';
+        }
+
+        function goBackToHomeFromLogin() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('home-page').style.display = 'block';
+        }
+
+        function goBackToHomeFromSignup() {
+            document.getElementById('signup-page').style.display = 'none';
+            document.getElementById('home-page').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
