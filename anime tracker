@@ -1,4 +1,38 @@
 import streamlit as st
+
+# Title for the Streamlit app
+st.title("HTML Program in Streamlit")
+
+# HTML content
+html_code = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My First HTML Program</title>
+    <style>
+        body {
+            background-color: lightblue;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: navy;
+        }
+        p {
+            color: darkgreen;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Streamlit with HTML!</h1>
+    <p>This is a simple HTML page rendered inside Streamlit.</p>
+</body>
+</html>
+"""
+
+# Display the HTML in Streamlit
+st.components.v1.html(html_code, height=300)
+
 import json
 
 # Load user data from local storage (if exists)
