@@ -1,14 +1,18 @@
 import streamlit as st
+import json
 
 # Title for the Streamlit app
 st.title("HTML Program in Streamlit")
 
-# HTML content
-html_code = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My First HTML Program</title>
+# Display the HTML content in Streamlit using markdown
+html_content = """
+# Welcome to Streamlit with HTML!
+This is a simple HTML page rendered inside Streamlit.
+"""
+
+# Apply CSS styles directly in Streamlit
+st.markdown(
+    """
     <style>
         body {
             background-color: lightblue;
@@ -22,18 +26,11 @@ html_code = """
             color: darkgreen;
         }
     </style>
-</head>
-<body>
-    <h1>Welcome to Streamlit with HTML!</h1>
-    <p>This is a simple HTML page rendered inside Streamlit.</p>
-</body>
-</html>
-"""
+    """,
+    unsafe_allow_html=True,
+)
 
-# Display the HTML in Streamlit
-st.components.v1.html(html_code, height=300)
-
-import json
+st.markdown(html_content, unsafe_allow_html=True)
 
 # Load user data from local storage (if exists)
 users = {}
@@ -166,3 +163,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
